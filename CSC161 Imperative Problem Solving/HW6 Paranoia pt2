@@ -1,0 +1,246 @@
+    /***********************************************************************
+     * Name(s)  Kelly Paek                                                 *
+     * Assignment name (Homework 6 Paranoia)                               *
+     * Help obtained: Seunghyeon Kim                                       *
+     * King, K. N. (2008). C Programming: A Modern Approach . W.W. Norton  *
+     * & Company.                                                          *
+     * https://eikmeier.sites.grinnell.edu/csc-161-fall-2023/readings/wordl*
+     * e.html                                                              *
+     * Due Date 12/06                                                      *
+     ***********************************************************************/
+
+    /* *********************************************************************
+     * Academic honesty certification:                                     *
+     *   Written/online sources used:                                      *
+     *     [include textbook(s), CSC 161 labs or readings;                 *
+     *       complete citations for Web or other written sources           *
+     *      write "none" if no sources used]                               *
+     *   Help obtained                                                     *
+     *     [indicate names of instructor, class mentors                    *
+     *      or evening tutors, consulted according to class policy;        *
+     *      write "none" if none of these sources used]                    *
+     *     ["none" required for Homework Problems                          *
+     *   My/our typed name(s) below confirms that the above list of sources*
+     *   is complete AND that I/we have not talked to anyone else          *
+     *   (e.g., CSC 161 students, tutors) about the solutions              *
+     *                                                                     *
+     *   Signature:  Kelly Paek                                            *
+     ***********************************************************************/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
+#include <ctype.h>
+#include "plist.h"
+
+/*
+Function: A function that creates a pnode and returns a pointer to that node
+Precondition: name is a pointer to a character array, and next is a pointer to an address the pnode will point to
+Postcondition: allocates a new node on the heap with the given values and returns a pointer to the pnode
+*/
+pnode* make_pnode(char *name, pnode *next) {
+    pnode *ret = (pnode*) malloc(sizeof(pnode));
+    ret->name = name;
+    ret->next = next;
+    return ret;
+}
+
+/*
+Function: A function that makes a plist and returns a pointer to that list
+Precondition: none
+Postcondition: allocates a new, empty list on the heap and returns a pointer to the list created
+*/
+
+plist* make_list() {
+    plist *ret = (plist*) malloc(sizeof(plist));
+    ret->first = NULL;
+    return ret;
+}
+
+/*
+void free_node(pnode *node)
+Function: A function that frees pnode of its contents (including character arrays)
+Precondition: list is a pointer to pnode node
+Postcondition: frees the given node
+*/
+void free_node(pnode *node) {
+    free(node->name);
+    free(node);
+}
+
+/*
+void free_list(plist *list)
+Function: A function that frees a plist of its contents (pnodes and its contents are removed from the list as well)
+Precondition: list is a pointer to plist list
+Postcondition: frees the given list
+*/
+void free_list(plist *list) {
+    pnode *cur = list->first;
+    while (cur != list->last) {
+        pnode *temp = cur;
+        cur = cur->next;
+        free_node(temp);
+    }
+    free_node(cur);
+    free(list);
+}
+
+
+/*
+void list_insert(plist *list, char *name)
+Function: A function that inserts the given name (as a string) into the end of the list
+Precondition: list is a pointer to plist list
+Postcondition: list has the new name at the end of the list
+*/
+void list_insert(plist *list, char *name) {
+    pnode *cur = list->first;
+    pnode *new = make_pnode(name, NULL);
+    if (cur == NULL) {
+        list->first = new;
+        list->last = new;
+    } else {
+        list->last->next = new;
+        list->last = new;
+    } 
+    new->next = list->first;
+}
+
+
+/*
+void list_insert(plist *list, char *name)
+Function: A function that removes the given name from the list
+Precondition: list is a pointer to plist list
+Postcondition: returns true if the name is found and removed and false otherwise
+*/
+bool list_remove(plist *list, char *name) {
+    if (list->first == NULL) {
+        return false;
+    } 
+    //when name is equal to the first name on the list
+    pnode * prev = list->last;
+    if (strcmp(list->first->name, name) == 0) {
+        pnode * temp = list->first;
+        list->first = temp->next;
+        prev->next = temp->next;
+        free_node(temp);
+        return true;
+    } 
+    prev = list->first;
+    for (pnode * current = list->first->next; current != list->first; current = current->next) {
+        if (strcmp(current->name, name) == 0) {
+            if (current == list->last) {
+                list->last = prev;
+            } 
+            prev->next = current->next;
+            free_node(current);
+            return true;
+        }
+        prev = prev->next;
+    }
+    return false;
+}
+
+
+/*
+int list_size(plist *list)
+Function: A function that returns the number of elements in the list
+Precondition: list is a pointer to plist list
+Postcondition: returns the number of elements in the list
+*/
+int list_size(plist *list) {
+    int size = 0;
+    pnode *cur = list->first;
+    //if list is empty, returns 0
+    if (list->first == NULL) {
+        return size;
+    } 
+    else {
+        //if list is not empty, loop through each node, adding 1 to size
+        while (cur != list->last) {
+            size += 1;
+            cur = cur->next;
+        }
+    }
+    //adds an extra 1 because loop does not count the last pnode
+    return size+1;
+}
+
+
+/*
+void print_as_target_ring(plist *list)
+Function: A function that prints the current list interpreting it as the target ring
+Precondition: list is a pointer to plist list
+Postcondition: prints the current list interpreting it as the target ring
+*/
+void print_as_target_ring(plist *list) {
+    if (list->first == NULL) {
+        printf("There are no targets left!\n");
+    } else if (list_size(list) == 1) {
+        printf("%s is the final person remaining!\n", list->first->name);
+    } else {
+        for (pnode * current = list->first; current != list->last; current = current->next) {
+            printf("\t%s is stalking %s\n", current->name, current->next->name);
+        }
+        printf("\t%s is stalking %s\n", list->last->name, list->first->name);
+    } 
+} 
+
+
+/*
+void print_as_tagged_list(plist *list)
+Function: A function that prints the current list interpreting it as the tagged list
+Precondition: list is a pointer to plist list
+Postcondition: prints the current list interpreting it as the tagged list
+*/
+void print_as_tagged_list(plist * taggedList) {
+    if (taggedList->first == NULL) {
+        printf("No people have been tagged yet!\n");
+    } else {
+        printf("Tagged List:\n");
+        for (pnode * current = taggedList->first; current != taggedList->last; current = current->next) {
+            printf("\t%s\n", current->name);
+        }
+        printf("\t%s\n", taggedList->last->name);
+    }
+}
+
+
+/*
+int get_line (char * lineBuffer, int maxLen)
+Function: A function that gets line that aedsiofhfso
+Precondition: lineBuffer is a character pointer and maxLen is an integer
+Postcondition: returns the numbers of characters read
+*/
+int get_line (char * lineBuffer, int maxLen) {
+    int i = 0;
+    char c;
+    while (((c = getc(stdin)) != '\n') && (i<maxLen-1)) {
+        lineBuffer[i] = c;
+        i++;
+    } 
+    lineBuffer[i] = '\0';
+    return i;
+}
+
+
+/*
+bool contains(plist * list, char * name)
+Function: A function that checks if a plist contains a name
+Precondition: list is a pointer to plist and name is a character pointer
+Postcondition: returns true if it is able to find name in list, and false if it cannot
+*/
+bool contains(plist * list, char * name) {
+    if (list->first == NULL) {
+        return false;
+    }
+    if (strcmp(list->last->name, name) == 0) {
+        return true;
+    } 
+    for (pnode * current = list->first; current != list->last; current = current->next) {
+        if (strcmp(current->name, name) == 0) {
+            return true;
+        } 
+    }
+    return false;
+}
