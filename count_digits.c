@@ -1,0 +1,108 @@
+    /***********************************************************************
+     * Name(s)  Kelly Paek                                                 *
+     * Assignment name (Homework 3 Count the Digits)                       *
+     * Help obtained: Seunghyeon Kim                                       *
+     * King, K. N. (2008). C Programming: A Modern Approach . W.W. Norton  *
+     * & Company.                                                          *
+     * https://eikmeier.sites.grinnell.edu/csc-161-fall-2023/homework/fall-*
+     * 2023-homework3.html                                                 *
+     * Due Date 10/09                                                      *
+     ***********************************************************************/
+
+    /* *********************************************************************
+     * Academic honesty certification:                                     *
+     *   Written/online sources used:                                      *
+     *     [include textbook(s), CSC 161 labs or readings;                 *
+     *       complete citations for Web or other written sources           *
+     *      write "none" if no sources used]                               *
+     *   Help obtained                                                     *
+     *     [indicate names of instructor, class mentors                    *
+     *      or evening tutors, consulted according to class policy;        *
+     *      write "none" if none of these sources used]                    *
+     *     ["none" required for Homework Problems                          *
+     *   My/our typed name(s) below confirms that the above list of sources*
+     *   is complete AND that I/we have not talked to anyone else          *
+     *   (e.g., CSC 161 students, tutors) about the solutions              *
+     *                                                                     *
+     *   Signature:  Kelly Paek                                            *
+     ***********************************************************************/
+#include <stdio.h>
+#include <ctype.h>
+#include <stdbool.h>
+
+int main() {
+// Explains to user the purpose of the program and instructions on how to use it.
+    printf("This is a program that counts the frequency of each digit between 0 and 9 within a given message\nand returns the most-frequently-occurred number.\nEnter your message (At least 1 character long and no longer than 100 characters).\n");
+
+// Defines maxCount, the variable used to store the maximum count of the integers, and totalFreq, the counts of characters in the input message. 
+    int maxCount = 0, totalFreq = 0;
+// Defines an integer array freqArr that stores the frequencies of integers 0 to 9
+    int freqArr[10] = {0};
+// ch is used to store each character of the input message and run it through the while loop
+    char ch;
+// Defines i (boolean), the condition for the while loop, false.
+    bool i = false;
+
+/* Loop that checks each character of the input message. If the character is '\n', it stops the
+   loop. Otherwise, checks whether the character is a number. If it is, it increments the count
+   of that number in the freqArr. Also keeps track of the number of characters in the input 
+   message using totalFreq. */
+    while (!i) {
+        scanf("%c", &ch);
+        int charNum = ch-'0';
+
+        if ((totalFreq >= 0) && (totalFreq <= 100)) {
+            if (ch == '\n') {
+                i = true;
+            }
+            else {
+                if (isdigit(ch)) {
+                    freqArr[charNum]++;
+
+                    if (freqArr[charNum] > maxCount) {
+                        maxCount = freqArr[charNum];
+                    }
+                }
+                totalFreq++;
+            }
+        } 
+        else {
+            printf("Your message has to be between 1 to 100 characters.\n");
+            return -1;
+        }
+    }
+
+// Checks if the input message is at least 1 character long.
+    if (totalFreq == 0) {
+        printf("Your message has to be between 1 to 100 characters. \n");
+        return -1;
+    }
+
+// Prints the table of frequency for each number from 0 to 9.
+    printf ("Numbers:      0   1   2   3   4   5   6   7   8   9\n");
+    printf ("Appearance:");
+    
+    for (int i = 0; i < 10; i++) {
+        printf("%4d", freqArr[i]);
+    }
+    printf ("\n");
+
+// Prints the following statement if the input message does not contain any numbers.
+    for (int i = 0; i < 10; i++) {
+        /* Checks if the frequencies of the numbers are all the same. If they are all 0,
+         it means that the message did not contain any numbers. */
+        if((freqArr[i] == maxCount) && (maxCount == 0)) {
+            printf("This message does not have any numbers in it. \n");
+            return -1;
+        }
+        /* Checks if the frequencies of the numbers are all the same. If they are not 0,
+         it means that the message had multiple numbers with the same count. In that case,
+         prints all the 'maximum' numbers. */
+        else if ((freqArr[i] == maxCount) && (maxCount != 0)) {
+            printf("%d ", i);
+        }
+    }
+    printf("appeared most frequently in the input message.\n");
+
+    return 0;
+}

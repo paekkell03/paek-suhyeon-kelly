@@ -1,0 +1,134 @@
+    /***********************************************************************
+     * Name(s)  Kelly Paek                                                 *
+     * Assignment name (Homework 1 Ticket Pricing)                         *
+     * Help obtained: Seunghyeon Kim                                       *
+     * King, K. N. (2008). C Programming: A Modern Approach . W.W. Norton  *
+     * & Company.                                                          *
+     * Due Date 9/13                                                       *
+     ***********************************************************************/
+
+    /* *********************************************************************
+     * Academic honesty certification:                                     *
+     *   Written/online sources used:                                      *
+     *     [include textbook(s), CSC 161 labs or readings;                 *
+     *       complete citations for Web or other written sources           *
+     *      write "none" if no sources used]                               *
+     *   Help obtained                                                     *
+     *     [indicate names of instructor, class mentors                    *
+     *      or evening tutors, consulted according to class policy;        *
+     *      write "none" if none of these sources used]                    *
+     *     ["none" required for Homework Problems                          *
+     *   My/our typed name(s) below confirms that the above list of sources*
+     *   is complete AND that I/we have not talked to anyone else          *
+     *   (e.g., CSC 161 students, tutors) about the solutions              *
+     *                                                                     *
+     *   Signature:  Kelly Paek                                            *                                                                               *
+     ***********************************************************************/
+
+
+#include <stdio.h>
+
+/* Program takes in the location, age, and time of the movie that the customers 
+   want and computes the price of the ticket for them. */
+
+
+int main(void)
+{
+    /* 'location', 'age', and 'time' are variables for user input. */
+    int location, age, time;
+    /* 'price' is the variable for the price of ticket. It will be displayed on the terminal once the user enters the inputs in the correct format. */
+    double price;
+    
+    /* Explains to the user what this program does. */
+    printf ("This program calculates the price of your show ticket based on the desired location in the theater, time of the show, and your age. \n");
+
+    /* Prompt for user to enter the number of their desired location for the movie. The input would be stored in 'location'. */
+    printf ("Please enter the number for your desired seat location in the theater.\n 1: Main floor middle section \n 2: Mainfloor sides \n 3: Balcony \n");
+    scanf ("%d", &location);
+
+    /* This checks whether the user entered their choice of location in the right format. If not, it asks the user to enter it in the right format again. */
+    /* Precondition: 'location' is an integer less than 1 and bigger than 3 */
+    /* Postcondition: terminate program */
+    if (location < 1 || location > 3) {
+        printf ("Please enter 1, 2, or 3 for your theater location. \n");
+        return 1;
+    }
+
+    /* Prompt for user to enter the number of their desired time for the movie. The input would be stored in 'time'. */
+    printf ("Please enter the number for the desired time of the show.\n 1: Matinee \n 2: Evening \n");
+    scanf ("%d", &time);
+
+    /* Assign values to 'price' according to the values of 'location' and 'time'. */
+    /* If 'location' is 1:
+       and 'time' = 1, price = 25. 
+       and 'time' = 2, price = 30. */
+    /* If 'location' is 2:
+       and 'time' = 1, price = 20. 
+       and 'time' = 2, price = 25. */
+    /* If 'location' is 3:
+       and 'time' = 1, price = 15. 
+       and 'time' = 2, price = 20. */
+    /* Otherwise (if 'time' is not an integer 1 or 2), ask user to enter their options in a correct format and terminate program. */
+    if (location == 1) {
+        if (time == 1)
+            price = 25;
+        else if (time == 2)
+            price = 30;
+        else {
+            printf ("Please enter 1 or 2 for your ticket time. \n");
+            return 1;
+        }
+    }
+    
+    else if (location == 2) {
+        if (time == 1)
+            price = 20;
+        else if (time == 2)
+            price = 25;
+        else{
+            printf ("Please enter 1 or 2 for your ticket time. \n");
+            return 1;
+        }
+    }
+    
+    else if (location == 3) {
+        if (time == 1)
+            price = 15;
+        else if (time == 2)
+            price = 20;
+        else {
+            printf ("Please enter 1 or 2 for your ticket time. \n");
+            return 1;
+        }
+    }
+
+    /* Prompt for user to enter their age from 0 to 100. The input would be stored in 'age'. */
+    printf ("Please enter your age. (From 0 to 100)\n");
+    scanf ("%d", &age);
+
+    /* Modify 'price' according to the values of 'age'. */
+    /* If 'age' is greater than or equal to 0 and less than or equal to 5,
+       make ticket free (price = 0). */
+    /* If 'age' is greater than or equal to 6 and less than or equal to 10 or greater than or equal to 55 and less than or equal to 100:
+       give a $5 discount to price (price = price - 5). */
+    /* Otherwise (if 'age' is less than 0 or greater than 100), ask user to enter their age in a correct format and terminate program. */
+    if ((age >= 0) && (age <= 5))
+    price = 0;
+
+    else if (((age >= 6) && (age <= 10)) || ((age >= 55) && (age <= 100)))
+    price -= 5;
+
+    else if ((age < 0) || (age > 100)) {
+        printf ("Please enter your age correctly. (From 0 to 100) \n");
+        return 1;
+    }
+
+    /* Prints the price of the user's movie ticket. Price is displayed the format of a dollar sign before the number (to two decimal places). */
+    /* Precondition: 'location' is an integer from 1 to 3
+                     'time' is an integer from 1 to 2
+                     'age' is an integer from 0 to 100
+       Postcondition: Print the price of the user's movie ticket. */
+    printf ("The price of your ticket is: $%.2lf \n", price);
+
+    return 0;
+}
