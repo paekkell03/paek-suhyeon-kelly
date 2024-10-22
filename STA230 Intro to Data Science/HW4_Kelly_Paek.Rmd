@@ -1,0 +1,144 @@
+---
+title: "HW4_Kelly_Paek"
+author: "Kelly Paek"
+date: "2024-10-07"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(DBI)
+library(odbc)
+library(RSQLite)
+library(tidyverse)
+library(dbplyr)
+library(ggplot2)
+
+
+#This line creates a temporary local database in memory.
+HW4DB <- dbConnect(RSQLite::SQLite(), ":memory:")
+
+library(nycflights13)
+data("flights")
+```
+
+## Question #1
+```{r Q1}
+dbWriteTable(HW4DB, "airlines", airlines)
+
+dbWriteTable(HW4DB, "airports", airports)
+
+dbWriteTable(HW4DB, "flights", flights)
+
+dbWriteTable(HW4DB, "planes", planes)
+
+dbWriteTable(HW4DB, "weather", weather)
+
+dbListTables(HW4DB)
+
+alrows <- dbGetQuery(HW4DB, "SELECT COUNT(*) FROM airlines")
+numalrows <- alrows[[1, 1]]
+aprows <- dbGetQuery(HW4DB, "SELECT COUNT(*) FROM airports")
+numaprows <- aprows[[1, 1]]
+flrows <- dbGetQuery(HW4DB, "SELECT COUNT(*) FROM flights")
+numflrows <- flrows[[1, 1]]
+plrows <- dbGetQuery(HW4DB, "SELECT COUNT(*) FROM planes")
+numplrows <- plrows[[1, 1]]
+wrows <- dbGetQuery(HW4DB, "SELECT COUNT(*) FROM weather")
+numwrows <- wrows[[1, 1]]
+
+cat("Airlines length:", numalrows, "\n")
+cat("Aiports length:", numaprows, "\n")
+cat("Flights length:", numflrows, "\n")
+cat("Planes length:", numplrows, "\n")
+cat("Weather length:", numwrows, "\n")
+```
+
+
+## Question #2
+```{r Q2}
+#We want 'model', 'airline', 'timeOfDepart', 'temperature', 'originAirport', 'destinationAirport'
+
+newflights <- flights %>% 
+  filter(year == 2013, month == 10, day == 9) %>% 
+  left_join(weather, by = c("origin", "year", "month", "day", "hour")) %>% 
+  mutate(temperature = temp) %>% 
+  select(carrier, flight, tailnum, origin, dest, hour, temperature) %>% 
+  mutate(timeOfDepart = hour) %>% 
+  left_join(planes, by = "tailnum") %>% 
+  select(carrier, flight, origin, dest, temperature, timeOfDepart, model) %>% 
+  left_join(airlines, by = "carrier") %>%
+  mutate(airline = name) %>%
+  select(flight, origin, dest, model, airline, timeOfDepart, temperature) %>%
+  left_join(airports, by = c("origin" = "faa")) %>%
+  mutate(originAirport = name) %>%
+  select(flight, origin, dest, model, airline, timeOfDepart, originAirport, temperature) %>%
+  left_join(airports, by = c("dest" = "faa")) %>%
+  mutate(destinationAirport = name) %>%
+  select(model, airline, timeOfDepart, temperature, originAirport, destinationAirport)
+
+  dim(newflights)
+```
+
+
+## Question #3
+```{r Q3}
+sqlnewflights <-
+  dbGetQuery(HW4DB, "SELECT
+  planes.model,
+  airlines.name AS airline,
+  flights.hour AS timeOfDepart,
+  weather.temp AS temperature,
+  airports.name AS originAirport,
+  airports2.name AS destinationAirport
+  FROM flights
+  LEFT JOIN weather ON flights.origin == weather.origin AND flights.time_hour == weather.time_hour
+  LEFT JOIN planes ON flights.tailnum == planes.tailnum
+  LEFT JOIN airlines ON flights.carrier == airlines.carrier
+  LEFT JOIN airports ON flights.origin == airports.faa
+  LEFT JOIN airports airports2 ON flights.dest == airports2.faa
+  WHERE flights.year == 2013 AND flights.month == 10 AND flights.day == 9")
+
+
+print("Differences other than NAs")
+sum((newflights == sqlnewflights) == FALSE, na.rm = TRUE)
+```
+*Collaborated with Debanjali, Istar*
+
+
+## Question #4
+```{r Q4}
+library(ggplot2)
+
+# Add a new column for morning/afternoon
+newflights <- newflights %>%
+  mutate(DepartureTime = ifelse(timeOfDepart < 12, "Morning", "Afternoon")) %>% 
+  filter(airline %in% c("American Airlines Inc.", 
+                     "Delta Air Lines Inc.", 
+                     "Endeavor Air Inc.", 
+                     "Envoy Air",
+                     "ExpressJet Airlines Inc.",
+                     "JetBlue Airways",
+                     "Southwest Airlines Co.",
+                     "United Air Lines Inc.",
+                     "US Airways Inc."))
+
+ggplot(newflights, aes(x = temperature, 
+                       fill = factor(DepartureTime, levels = c("Morning", "Afternoon")))) +
+  geom_histogram(position = "stack", 
+                 bins = 3, 
+                 alpha = 0.7) +
+  facet_wrap(~airline) +
+  theme_void() +
+  theme(axis.title.x = element_text(),
+       axis.title.y = element_text(angle = 90)) +
+  labs(title = "Flights by Temperature and Departure Time for October 09, 2013",
+       x = "Temperature",
+       y = "Flights",
+       fill = "Departure Time") +
+  scale_fill_manual(values = c("darkgrey", "lightcoral"),
+                    labels = c("Morning", "Afternoon")) 
+
+```
+*Collaborated with Debanjali, Istar*

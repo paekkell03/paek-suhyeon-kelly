@@ -1,0 +1,128 @@
+---
+title: "STA230_HW_5"
+author: "Kelly Paek"
+date: "2024-10-14"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(stringr)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(lubridate)
+
+```
+
+## Question #1 - Part A
+```{r Q1A}
+data <- scan("https://raw.githubusercontent.com/ds4stats/case-studies/master/twitter-sentiment/Ghostbusters.txt", what = "")
+unixpattern <- "<.*?>"
+no_unix_data <- str_remove_all(data, unixpattern)
+
+head(no_unix_data)
+length(no_unix_data)
+```
+
+
+## Question #1 - Part B
+```{r Q1B}
+# Selecting retweets by searching for anchored "RT @"
+retweets <- no_unix_data[str_detect(no_unix_data, "^RT @")]
+length(retweets)
+
+```
+
+
+## Question #1 - Part C
+```{r Q1C}
+# Selecting non-retweets
+non_retweets <- str_to_lower(no_unix_data[!str_detect(no_unix_data, "^RT @")])
+#length(non_retweets) #length(retweets) + length(non_retweets) = 5000!
+
+hate_count <- sum(str_detect(non_retweets, "hated*"))
+hate_count
+
+love_count <- sum(str_detect(non_retweets, "lo+ved*"))
+love_count
+```
+*Collaborated with Debanjali & Istar*
+
+
+## Question #2 - Part A
+```{r Q2A}
+ny_stories = read.csv("https://storybench.org/reinventingtv/abc7ny.csv")
+ca_stories = read.csv("https://storybench.org/reinventingtv/kcra.csv")
+combined = rbind(data.frame(ny_stories, location = "NY"), 
+                 data.frame(ca_stories, location = "CA"))
+
+# Filter teasers with "donald trump"
+trump_teaser <- combined %>%
+  filter(str_detect(str_to_lower(teaser), "donald trump"))
+
+# Making a table for proportion by location
+proportion_trump_teaser <- combined %>%
+  group_by(location) %>% #groupby proportion
+  summarise(proportion = sum(str_detect(str_to_lower(teaser), "donald trump")) 
+            / n()) #divide teasers with DT by total num of teasers for each location
+
+# Print the result
+print(proportion_trump_teaser)
+
+```
+
+
+## Question #2 - Part B
+```{r Q2B}
+new_combined <- combined %>% 
+  select(., location, headline) %>% #only select location & headline
+  mutate(headline = str_to_lower(headline)) %>% 
+  mutate(Trump = str_detect(headline, "trump")) %>% #make new column for whether headline has "trump"
+  mutate(US = str_detect(headline, "united states")) %>% #'' whether it has us
+  mutate(Russia = str_detect(headline, "russia")) %>% #'' whether it has russia
+  group_by(location, Trump) %>% #groupby organization & whther it has trump
+  summarize_at(c("US", "Russia"), sum) #summarize by count
+
+new_combined
+```
+
+
+## Question #2 - Part C
+```{r Q2C}
+# Convert the date column to Date type and extract the month
+cap_combined <- combined %>% 
+  mutate(month = month(format(mdy_hm(datetime)), label = TRUE)) %>% #extract month from datetime
+  mutate(allwords = str_split(teaser, "\\s+")) %>% #split teaser to list of words
+  mutate(capcount = sapply(allwords, 
+                           function(words) 
+                             sum(str_detect(words, "^[A-Z][a-z]*")))) %>% #count cap words
+  group_by(month) %>% #group by month
+  na.omit() %>% #omit NA month
+  summarise(total_capitalized_words = sum(capcount))
+
+
+# Finding the month with the most and the fewest capitalized words
+max_capitalized <- slice_max(cap_combined, total_capitalized_words)
+min_capitalized <- slice_min(cap_combined, total_capitalized_words)
+
+# Printing results
+cat("Month with the most capitalized words:", max_capitalized[[1,1]],"\n")
+cat("Month with the fewest capitalized words:", min_capitalized[[1,1]], "\n")
+
+```
+
+## Question #2 - Part D
+```{r Q2D}
+# 
+day_combined <- combined %>% 
+  mutate(weekday = wday(mdy_hm(datetime), label = TRUE)) %>%  # Extract weekday
+  group_by(weekday) %>%
+  na.omit() %>% 
+  summarize(headline_count = n())  # Count headlines per weekday
+  
+ggplot(day_combined, aes(x = weekday, y = headline_count)) +
+  geom_col(fill = "gray35") +
+  labs(x = "", y = "Number of headlines") +
+  theme_bw()
+```

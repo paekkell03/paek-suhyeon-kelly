@@ -1,0 +1,93 @@
+---
+title: "Homework #3"
+author: "Kelly Paek"
+date: "2024-09-24"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+```
+
+## Question #1
+```{r Question 1}
+polls <- read.csv("https://remiller1450.github.io/data/polls2016.csv")
+
+# make dataset longer so that each candidate (Trump and Clinton) can act as a 
+# catergorical variable
+new_polls <- polls %>% pivot_longer(cols = c("Trump..R.", "Clinton..D."),
+                                    names_to = "Candidate",
+                                    values_to = "Support") %>%
+  # only select necessary columns
+  select(., c("Poll", "Candidate", "Support"))
+
+# creating the plot
+ggplot(data = new_polls, aes(x = Candidate, y = Support, fill = Candidate)) +
+  # ensure that pre-calculated support percentages are used as the y
+  geom_bar(stat = "identity") +
+  # facet by each poll
+  facet_wrap(~Poll) +
+  # assign correct colors to the fill according to the candidates
+  scale_fill_manual(values = c("blue", "red"),
+                    labels = c("Clinton..D.", "Trump..R.")) +
+  # add plot title and remove x title
+  labs(title = "Candidate Support by Poll", x = NULL) +
+  theme_minimal()
+
+```
+
+
+
+## Question #2
+
+Long data is data with less columns with and more rows. Each observation is broken down to multiple rows to represent the different aspects of the observation. They are harder for us, humans, to understand the data, but easier to manipulate with R (depending on the work that needs to be done with the dataset). They are used for analyses requiring multiple observations per subject.
+
+Wide data, on the other hand, has a lot more columns. Each variable has its own column and each row represents a subject; multiple measurements/observations are spread across multiple columns. They are easier to read and understand with the human eye.
+
+To convert long to wide format, we use pivot_wider(df, id_cols, names_from, values_from). 'id_cols' would be the variable that would be given its own row. 'names_from' would be the column where all the column names would be coming from, and 'values_from' would be where the actual data would be coming from.
+
+To convert wide to long format, we use pivot_longer(df, cols, names_to, values_to). 'cols' would be the what would be included in the long, single list of values. 'names_to' would be the name of column that would contain all the column names of the previous version of df. 'values_to' would be the name of the column where all the values would be saved in.
+
+*referred to our Lab 6 webpage for help*
+
+## Question #3
+```{r Question 3}
+icu <- read.csv("https://remiller1450.github.io/data/ICUAdmissions.csv")
+
+# Filter for infection in ICU visits and Previous == 0
+new_icu <- icu %>%
+  filter(Previous == 0) %>%
+  # group by sex so we get z score by sex
+  group_by(Sex) %>% 
+  # Create and calculate new column for age-specific Z-scores
+  mutate(age_spec_Z_score = 
+           (Age - mean(Age, na.rm = TRUE)) / sd(Age, na.rm = TRUE))
+
+# plotting a density chart of sex specific Z-scores for each sex
+ggplot(new_icu, aes(x = age_spec_Z_score, y = HeartRate, fill = as.factor(Sex))) +
+  # modifying labels for legend and changing color of plots
+  scale_fill_manual(labels = c("Male", "Female"),
+                    values = c("black", "red")) +
+  scale_color_manual(values = c("black", "red")) +
+  geom_histogram(mapping = aes(y = after_stat(density), color = as.factor(Sex)), 
+                 position = "identity", 
+                 alpha = 0.5,
+                 bins = 30,
+                 na.rm = TRUE) +
+  # change title and axes labels according to the given plot
+  labs(title = "HR Density by Sex", x = "Age Z-score", y = NULL, fill = "Sex") +
+  # change theme to recreate given plot
+  theme(panel.background = element_blank(),
+        plot.title = element_text(hjust = 0.5)) +
+  guides(color = "none")
+
+```
+
+```{r}
+drives = read.csv("https://remiller1450.github.io/data/drives.csv")
+```
+
+*Collaborated with Cassidy, Debanjali, and mentor Siho*

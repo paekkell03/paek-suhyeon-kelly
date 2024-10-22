@@ -1,0 +1,169 @@
+---
+title: "Homework #2"
+author: "Kelly Paek"
+date: "2024-09-25"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+```
+
+## Question #1
+```{r Question 1}
+data("diamonds")
+#setting the x & y axis and variable for color in ggplot
+ggplot(data = diamonds, aes(x = carat, y = price, color = color)) + 
+  #setting the plot type to point plots
+  geom_point(alpha = 0.3) +
+  #renaming labels on x and y axis and color legend
+  labs(x = "Carat", y = "Sale Price ($)", color = "Color Grade") +
+  #setting the theme of the plot to minimal
+  theme_minimal() +
+  #changing the scale of the x axis to the log base of 2 to replicate the given graph.
+  scale_x_continuous(trans='log2')
+
+```
+
+## Question #2 - Part A
+```{r Question 2A}
+# install.packages("babynames")
+library(babynames)
+data("babynames")
+
+#subsetting so that df only contains desired names
+baby_subset <- subset(babynames, subset = name %in% c("Ryan", "Jeff", "Shonda", 
+                                                    "Jonathan", "Collin", 
+                                                    "Nathan", "William"))
+
+ggplot(baby_subset, aes(x = year, y = n, color = name)) + geom_line() 
+```
+The graph above is messy because every name occurs twice for each year (for male and female) in the dataset, and for every name in every year, ggplot is plotting 2 values at once, creating this zigzag line graph. Also, this is not a great way to represent this dataset because there are way more 'William's in the dataset compared to other names, which makes it hard to see the plots for other names. To fix this issue, we can facet wrap to create individual plots for each name, and also plotting separate lines for sex. 
+
+
+## Question #2 - Part B
+```{r Question 2B}
+#plots frequency of each name over time, and distinguishes frequency by sex
+ggplot(baby_subset, aes(x = year, y = n, color = sex)) + 
+  geom_line() +
+  #wrapping the plots by name so there is a plot for each name
+  facet_wrap(~name) +
+  #renaming labels to make plot neater
+  labs(x = "Year", y = "Frequency per year", color = "Sex") +
+  #ressigning colors of line plots and legend labels
+  scale_colour_manual(values = c("hotpink3", "royalblue3"), 
+                      labels = c('Female', 'Male')) +
+  theme_minimal()
+
+```
+*help received from mentor Siho*
+
+## Question #3 - Part A
+```{r Question 3A}
+data("economics")
+
+#subsetting so that df only contains columns needed for 3B
+new_economics <- subset(economics, select = -c(pce, pop, unemploy))
+
+head(new_economics, 3)
+```
+
+## Question #3 - Part B
+```{r Question 3B}
+
+#making the df longer so type of outcome 'psavert' or 'uempmed' is set as a
+#categorical variable
+b_economics <- pivot_longer(new_economics, 
+                           cols = c("psavert", "uempmed"), 
+                           names_to = "Outcome", 
+                           values_to = "Values")
+ggplot() +
+  #plotting to display 'psavert' and 'uempmed' according to time
+  geom_line(data = b_economics, 
+            aes(x = date, y = Values, color = Outcome)) +
+  labs(x = "Age", y = "Height") +
+  theme_minimal()
+
+```
+These variables appear to be related, because if the uempmed(Median Weeks Unemployed) increases, psavert(Personal saving rate) increases, and the vise versa.
+
+*Collaborated with Debanjali*
+
+## Question #4
+```{r Question 4}
+library(datasets)
+data("Loblolly") 
+
+
+avgLoblolly <- Loblolly %>%
+  #grouping the df by age
+  group_by(age) %>%
+  #creating a new column that contains the mean height for each age
+  mutate(avgheight = mean(height)) %>% 
+  #selecting only the age and average height from the df
+  select(age, avgheight)
+
+ggplot() +
+  #plotting the new df from above (avgheight vs height) as a red line
+  geom_line(data = avgLoblolly, 
+            aes(x = age, y = avgheight), 
+            color = "red",  
+            lwd = 2) +
+  #plotting the original df (height of each tree), with each line representing
+  #the height of each tree on another layer
+  geom_line(data = Loblolly, 
+            aes(x = age, y = height, group = Seed), 
+            alpha = 0.5) +
+  #reassigning labels
+  labs(x = "Age", y = "Height") +
+  #changed theme to recreate given plot
+  theme_bw()
+
+```
+*Collaborated with Debanjali and Youssef*
+
+
+## Question #5 - Part A
+```{r Question 5A}
+library(Lahman)
+data("Teams")
+
+#create a new df
+top_teams <- Teams %>% 
+  #create a new column with newly calculated total bases
+  mutate(TB = ((H - X2B - X3B - HR)*1 + X2B*2 + X3B*3 + HR*4)) %>%
+  #create a new column for SLG
+  mutate(SLG = TB/AB) %>%
+  #selecting only the desired columns
+  select(yearID, teamID, SLG) %>% 
+  ### Modification: filtered to only select top teams since 1969
+  filter(yearID >= 1969) %>% 
+  #arranging by the descending order for SLG to select top 10 teams
+  arrange(desc(SLG)) %>% 
+  #select top 10 teams
+  head(., 10)
+
+top_teams
+```
+
+## Question #5 - Part B
+```{r Question 5B}
+data("Batting")
+
+top_player <- Batting %>%
+  #choose player from Batting from teams from Part A
+  semi_join(top_teams, by = c("yearID", "teamID")) %>%
+  #group df by yearID and teamID
+  group_by(yearID, teamID) %>%
+  #pick the player with the highest HR
+  top_n(1, HR) %>%
+  #select desired columns
+  select(yearID, teamID, playerID, HR)
+
+top_player
+```
+
+
