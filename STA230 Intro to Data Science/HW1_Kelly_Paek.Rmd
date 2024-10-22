@@ -1,0 +1,243 @@
+---
+title: "Homework #1"
+author: "Kelly Paek"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+```
+
+### Directions
+
+For this assignment you should edit the "author" info in the header to include your name. Note that **you should save your file as "HW1_Your_Name.Rmd" when knitting.**
+
+For each question, you should add or modify code in blocks provided. You should provide any written responses in the section that follows the code block.
+
+If code for a question has been provided, but you were not asked to modify it, please don't delete it or your .Rmd file might not knit properly.
+
+*Homework #1 is due 9/13 by 10:00pm*
+
+$~$
+
+### Question #1 - Part A
+
+Write code that stores the data at the following URL as a data.frame named `admissions_data`:
+
+https://remiller1450.github.io/data/admissions.csv 
+
+Next, print the dimensions of this data frame and write a sentence below your code chunk that briefly describes the total number of applicants and characteristics contained in the data set.
+
+*Note*: These data were queried in response to sex-based discrimination in graduate program admissions at a large US university in the 1970s. The column `dept` indicates the department applied to, and `gpa` is the applicant's undergraduate grade point average, and `admit == "Y"` indicates an applicant was admitted.
+
+```{r}
+admissions_data <- read.csv("https://remiller1450.github.io/data/admissions.csv")
+
+dim(admissions_data)
+```
+
+There are 20754 applicants in the dataset, listed with 5 elements of each applicant: applicant ID, department applied to, their GPA, and whether the applicant was admitted.
+
+*None*
+
+
+### Question #1 - Part B
+
+Use the `table()` and `prop.table()` functions to find the proportions of applicants of each sex that were admitted.
+
+Then, without performing any statistical tests, briefly describe whether you think there appears to be a meaningful discrepancy in admissions rates.
+
+```{r}
+admit_table <- table(admissions_data$admit, admissions_data$sex)
+prop.table(admit_table, margin = 2)
+```
+
+There appears to be no discrepancy in admissions rates based on sex, because the proportion of male and female applicants that got admitted for each sex is around 23.9% and 19.3% respectively, which is pretty similar.
+
+*None*
+
+
+### Question #1 - Part C
+
+Use the `ggplot` function (you may assume the required package is installed already, but you should load the library) to create *stacked conditional bar chart* displaying the proportion of applicants of each sex that were admitted *within each department*.
+
+*Hint*: A conditional bar chart is one where each "stack" of bars sums to 1. You should consider the position argument available in the proper `geom`.  You can visit the [ggplot cheatsheet](https://www.maths.usyd.edu.au/u/UG/SM/STAT3022/r/current/Misc/data-visualization-2.1.pdf) for more help.  Your graph should be faceted by department.
+
+```{r}
+ggplot(data = admissions_data, aes(fill = admit, x = sex, y = 1)) + 
+  geom_bar(position="fill", stat="identity") +
+  facet_wrap(~dept) +
+  labs(x = "Sex", y = "Proportion")
+```
+
+
+*None*
+
+### Question #1 - Part D
+
+Beginning with the visualization you created in Part C, make the following modifications:
+
+1. Change the theme to `theme_minimal`
+2. Change the labels given to at least one of the variables used in the graph
+3. Use the `scale_fill_manual()` function to change the colors used to represent "admit" and "not" to "green" and "grey" (respectively)
+
+```{r}
+ggplot(data = admissions_data, aes(fill = admit, x = sex, y = 1)) + 
+  geom_bar(position="fill", stat="identity") +
+  facet_wrap(~dept) +
+  theme_minimal() +
+  labs(x = "Sex", y = "Proportion", fill = "Admitted") +
+  scale_fill_manual(values = c("grey", "green"))
+```
+
+*None*
+
+$~$
+
+### Question #2
+
+Consider the following `ggplot` code:
+
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy, color = "blue"))
+```
+
+**Part A**: Why are the data-points in the scatter plot not colored blue? Briefly explain.
+
+The aes function treats "blue" as a literal string rather than a color and maps all the points to the category "blue" (as shown by legend) rather than assigning the color to the dots represented on the graph. So in order to change the color of the points to blue, the 'color = "blue"' should go outside the aes function.
+
+**Part B**: Modify the code so that the points are properly shown as blue.
+
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy), color = "blue")
+```
+
+$~$
+
+### Question #3 - Part A
+
+The Washington Post maintains a database of fatal shootings by a police officer in the line of duty. Additional details on the methodology can be found here: https://github.com/washingtonpost/data-police-shootings 
+
+The URL below contains data for all individuals entered into the database between 2015 and 2019:
+
+https://remiller1450.github.io/data/Police2019.csv
+
+Write code that stores these data as a data frame named `police`. Then find the average age of the individuals in this data set, removing missing values as necessary.
+
+```{r}
+police <- read.csv("https://remiller1450.github.io/data/Police2019.csv")
+
+mean(police$age, na.rm = TRUE)
+```
+
+### Question #3 - Part B
+
+Print the names of every individual who did not have an age listed in the database (ie: all individuals removed when calculating the mean in Part A)
+
+```{r}
+missingage <- subset(police, is.na(police$age))
+missingage$name
+```
+
+### Question #3 - Part C
+
+Subset the `police` data set to only include only individuals who were armed with a gun (you may ignore any categories involving a gun and something else). Then, determine the fraction of these individuals had a threat level of "attack".
+
+```{r}
+gun <- subset(police, armed == "gun")
+guntable <- table(gun$threat_level)
+propguntable<- prop.table(guntable)
+
+print(propguntable[1])
+```
+
+*Cassidy*
+
+### Question #4
+
+In the lab, we briefly discussed the topic of magic numbers, that is, numbers that are “hard-coded” into our code rather than a more explicit statement of our intended actions. Magic numbers make our code less robust to accidents or changes, potentially introducing errors as we iteratively change parts of our analysis.
+
+The code below contains several instances of magic numbers:
+
+```{r}
+x <- c(1,2,3, "four", 5, "six", 7, 6, 2)
+
+
+### START ###
+
+x <- as.numeric(x)
+
+# Get rid of NA values
+x <- x[c(1,2,3,5,7,8,9)]
+
+# Create a vector to add to x
+y <- rep(1, length = 7)
+
+# Create new data.frame with x, y, and x+y
+df <- data.frame(x = x, y = y, z = x + y)
+
+## Only keep values where z > 5 and x <= 7 and grab column "z"
+z_new <- df[c(4,5,6), 3]
+
+
+### END ###
+
+z_new
+```
+
+Copy the code from the lines between ### START ### and ### END ### into the block below and modify it to remove the magic numbers with the appropriate expressions. Leave a comment for each modification explaining why the change is made. The value for z_new should remain unchanged:
+
+```{r}
+x <- c(1,2,3, "four", 5, "six", 7, 6, 2)
+
+x <- as.numeric(x)
+
+# Get rid of NA values
+# x <- x[c(1,2,3,5,7,8,9)]
+x <- na.omit(x)
+# I used na.omit instead of manually getting rid of the NAs manually, so the 
+# code will be applicable to any lists.
+
+# Create a vector to add to x
+# y <- rep(1, length = 7)
+y <- rep(1, length = length(x))
+# I used the length function so the code is applicable for lists that have
+# different number of elements in them.
+
+# Create new data.frame with x, y, and x+y
+df <- data.frame(x = x, y = y, z = x + y)
+
+## Only keep values where z > 5 and x <= 7 and grab column "z"
+# z_new <- df[c(4,5,6), 3]
+z_new <- subset(df$z, df$z > 5 & df$x <= 7)
+# Again, I wrote a code with that grabs column z that meets logical conditions 
+# "z > 5 and x <= 7" so the code would do the same even with a different list.
+
+z_new
+```
+
+By removing instances of magic numbers, we can be sure that the “logic” of our operations will stay the same, even if the input changes. To verify this, copy your updated code again into the block below with the new input vector x. Verify that the results make sense
+
+```{r}
+## "new" vector x
+x <- c(3, 7, "four", 2)
+
+# Write same updated code here and verify it works
+
+x <- as.numeric(x)
+
+x <- na.omit(x)
+
+y <- rep(1, length = length(x))
+
+df <- data.frame(x = x, y = y, z = x + y)
+
+z_new <- subset(df$z, df$z > 5 & df$x <= 7)
+# z_new <- df[which(df$z > 5 & df$x <= 7),3]
+
+z_new
+```
+*Cassidy*
