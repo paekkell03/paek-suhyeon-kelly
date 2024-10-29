@@ -1,0 +1,44 @@
+library(shiny)
+library(ggplot2)
+library(shinydashboard)
+library(devtools)
+library(gganatogram) # installed from Github; for human anatogram
+
+# Loading and cleaning data
+cancerdata <- read.csv("")
+
+
+# Making RShiny app
+ui <- dashboardPage(
+  dashboardHeader(title = "Basic dashboard"),
+  dashboardSidebar(),
+  dashboardBody(),
+  # Select facet variable (in addition to named list, we can use choiceNames/choiceValues)
+  radioButtons(inputId = "facet", label = "Select Facet Column:", 
+               choiceNames = c("Age of Diagnosis", "Race/Ethnicity", "Sex"),
+               choiceValues = c("cyl", "drv", "year")), 
+  #histogram
+  #piechart maybe of overall cancer (group by age or sex or race/ethnicity or type)
+  #
+)
+
+
+server <- function(input, output){
+  X <- eventReactive(
+    eventExpr = input$simulate,
+    valueExpr = {
+      rnorm(input$n)
+    })
+  
+  bins <- eventReactive(
+    input$simulate,
+    input$slider1
+  )
+  
+  output$myhist <- renderPlot({
+    ggplot() + geom_histogram(aes(x = X()), bins = bins())
+  })
+}
+
+
+shinyApp(ui, server)
