@@ -8,6 +8,7 @@ library(devtools) # required for anatogram
 library(gganatogram) # installed from Github; for human anatogram
 
 
+## we will put the following data cleaning in a different R file later
 ## Loading and cleaning data
 cancerdata <- read.csv("C:/Users/deban/OneDrive/Documents/cancer1.csv")
 
@@ -49,6 +50,8 @@ new_cancerdata <- cancerdata %>%
     )
   )
 
+
+
 ## Making RShiny app
 
 # Define UI
@@ -60,19 +63,20 @@ ui <- dashboardPage(
                  choiceValues = c("Age.recode", "Race.ethnicity", "Sex")),
     radioButtons(inputId = "lines", label = "Select Line graph Facet Variable:",
                   choiceNames = c("White", "Black", "All Asian", "All Pacific Islander",
-                                  "American Indian/Alaska Native", "Other", "Unkown"),
+                                  "American Indian/Alaska Native", "Other", "Unknown"),
                   choiceValues = c("White", "Black", "All Asian", "All Pacific Islander",
-                                   "American Indian/Alaska Native", "Other", "Unkown"))
+                                   "American Indian/Alaska Native", "Other", "Unknown"))
   ),
   dashboardBody(
     plotOutput("PieChart"),
-    actionButton("plot_button", "Show Point Plot"),
-    plotOutput("PointPlot")
+    actionButton("plot_button", "Show Line Graph"),
+    plotOutput("LineGraph")
   )
 )
 
 # Define server logic
 server <- function(input, output){
+  #data manipulation for pie-chart on cancer by race
   output$PieChart <- renderPlot({
     # Create a summary based on the selected variable
     data <- new_cancerdata %>%
@@ -80,7 +84,7 @@ server <- function(input, output){
       mutate(percent = n / sum(n) * 100,
              percent_label = paste0(round(percent, 1), "%"))
     
-    # Make pie chart
+    # plotting pie chart
     ggplot(data, aes(x = "", y = percent, fill = !!sym(input$pief))) +
       geom_col(color = "black") +
       coord_polar(theta = "y") +
@@ -92,24 +96,29 @@ server <- function(input, output){
   })
   
   
-  # make density plots of cancer distribution over ages within each sex
-  output$PointPlot <- renderPlot({
-    data_count <- new_cancerdata %>%
-      #group_by(input$lines) %>% 
-      group_by(Age.recode, Sex, Race.ethnicity) %>%
-      mutate(count_perAgegroup = count(!!sym(input$lines))) %>%
-      select(Age.recode, count_perAgegroup)
-    #making density plots to see age distribution
-
-    ggplot(data_count, aes(x = Age.recode, y = count_perAgegroup, color = Sex, group = Sex)) +
-      geom_point() + geom_line() +
-      labs(title = "Cancer Distribution Over Ages",
-           x = "Age Group",
-           y = "Count") +
-      theme_minimal()
+  # data manipulation for line graphs on cancer by race/sex over age groups
+  output$LineGraph <- renderPlot({
+    #need to click action button for line graph
+    input$plot_button
+    isolate({
+      data_count <- new_cancerdata %>%
+        filter(Race.ethnicity == input$lines) %>% 
+        group_by(Age.recode, Sex) %>%
+        summarize(count_perAgegroup = n())
+      
+      #plotting line graphs
+      ggplot(data_count, aes(x = Age.recode, y = count_perAgegroup, color = Sex, group = Sex)) +
+        geom_point() + geom_line() +
+        labs(title = "Cancer Distribution Over Ages",
+             x = "Age Group",
+             y = "Count") +
+        theme_minimal()
+    })
+    
   })
 }
 #Piechart reference: https://www.youtube.com/watch?v=AHRh4yyHl4g
 
 
 shinyApp(ui, server)
+
