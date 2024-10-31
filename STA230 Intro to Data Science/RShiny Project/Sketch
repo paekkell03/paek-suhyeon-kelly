@@ -10,19 +10,25 @@ library(gganatogram) # installed from Github; for human anatogram
 
 ## we will put the following data cleaning in a different R file later
 ## Loading and cleaning data
-cancerdata <- read.csv("C:/Users/deban/OneDrive/Documents/cancer1.csv")
+cancerdata <- read.csv("/Users/kellypaek/Desktop/STA230_RShiny_Debanjali_Kelly/cancer1.csv")
 
-# Viewing all race/ethnicity and age categories
+# Viewing all categories for cleaning
 #racecategories <- unique(cancerdata$Race.ethnicity) 
 #print(racecategories)
-#allagecat <- unique(new_cancerdata$Age_recode)
+#allagecat <- unique(cancerdata$Age_recode)
 #print(allagecat) 
+#alltype <- unique(cancerdata$Primary.Site...labeled)
+#print(alltype)
 
 # Renaming columns and clean categories for readability
 new_cancerdata <- cancerdata %>%
   rename(Age.recode = Age.recode.with..1.year.olds) %>%
+  separate(col = Primary.Site...labeled, 
+           into = c("Site", "SpecificSite"),
+           sep = "[-]") %>% #Need to fix this because C50.4 has 2 '-'s
+  select(-c("Year.of.diagnosis", "SEER.cause.specific.death.classification")) %>% 
   mutate(
-    # Recode Race/Ethnicity
+    # Recategorize Race/Ethnicity
     Race.ethnicity = case_when(
       Race.ethnicity %in% c("Chinese", "Filipino", "Korean (1988+)", "Other Asian (1991+)",
                             "Asian Indian (2010+)", "Japanese", "Laotian (1988+)", 
@@ -35,7 +41,7 @@ new_cancerdata <- cancerdata %>%
                             "New Guinean (1991+)") ~ "All Pacific Islander",
       TRUE ~ Race.ethnicity
     ),
-    # Recode Age groups
+    # Recategorize age groups
     Age.recode = case_when(
       Age.recode %in% c("00 years", "01-04 years", "05-09 years") ~ "0-9 years",
       Age.recode %in% c("10-14 years", "15-19 years") ~ "10-19 years",
@@ -47,9 +53,34 @@ new_cancerdata <- cancerdata %>%
       Age.recode %in% c("70-74 years", "75-79 years") ~ "70-79 years",
       Age.recode %in% c("80-84 years", "85+ years") ~ "80+ years",
       TRUE ~ Age.recode
+    ),
+    # Recategorize by major organ system
+    Site = case_when(
+      Site %in% c("C18.0", "C18.1", "C18.2", "C18.3", "C18.4", "C18.5", "C18.6",
+                  "C18.7", "C18.8", "C18.9", "C19.9", "C20.9", "C21.0", "C21.1", 
+                  "C23.9", "C24.0", "C24.1", "C25.0", "C25.1", "C25.2", "C25.8") 
+      ~ "Digestive System",
+      Site %in% c("C34.0", "C34.1", "C34.2", "C34.3", "C34.8", "C34.9") 
+      ~ "Respiratory System",
+      Site %in% c("C43.0", "C43.1", "C43.2", "C43.3", "C43.4", "C43.5", "C43.6",
+                  "C43.7", "C43.8", "C43.9") 
+      ~ "Skin and Related Tissues",
+      Site %in% c("C64.9", "C65.9", "C67.0", "C67.1", "C67.2", "C67.3", "C67.4",
+                  "C67.5", "C67.6", "C67.7", "C67.8", "C67.9") 
+      ~ "Urinary System",
+      Site %in% c("C50.0", "C50.1", "C50.2", "C50.3", "C50.4", "C50.5", "C50.6",
+                  "C50.8", "C50.9", "C61.9") 
+      ~ "Reproductive System",
+      Site %in% c("C73.9") 
+      ~ "Endocrine System",
+      Site %in% c("C81.9", "C82.9", "C83.9", "C85.9", "C88.9", "C90.0", "C91.0") 
+      ~ "Lymphatic and Hematopoietic System",
+      Site %in% c("C71.0", "C71.1", "C71.2", "C71.3", "C71.4", "C71.5", "C71.6",
+                  "C71.7", "C71.8", "C71.9") 
+      ~ "Nervous System",
+      TRUE ~ "Other"
     )
   )
-
 
 
 ## Making RShiny app
@@ -58,9 +89,9 @@ new_cancerdata <- cancerdata %>%
 ui <- dashboardPage(
   dashboardHeader(title = "Cancer Data Dashboard"),
   dashboardSidebar(
-    radioButtons(inputId = "pief", label = "Select Pie chart Facet Variable:", 
-                 choiceNames = c("Age of Diagnosis", "Race/Ethnicity", "Sex"),
-                 choiceValues = c("Age.recode", "Race.ethnicity", "Sex")),
+    radioButtons(inputId = "pief", label = "Select Facet Variable:", 
+                 choiceNames = c("Age of Diagnosis", "Race/Ethnicity", "Sex", "Cancer Site"),
+                 choiceValues = c("Age.recode", "Race.ethnicity", "Sex", "Site")),
     radioButtons(inputId = "lines", label = "Select Line graph Facet Variable:",
                   choiceNames = c("White", "Black", "All Asian", "All Pacific Islander",
                                   "American Indian/Alaska Native", "Other", "Unknown"),
