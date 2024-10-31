@@ -9,7 +9,7 @@ library(gganatogram) # installed from Github; for human anatogram
 
 
 ## Loading and cleaning data
-cancerdata <- read.csv("/Users/kellypaek/Desktop/STA230_RShiny_Debanjali_Kelly/cancer1.csv")
+cancerdata <- read.csv("C:/Users/deban/OneDrive/Documents/cancer1.csv")
 
 # Viewing all race/ethnicity and age categories
 #racecategories <- unique(cancerdata$Race.ethnicity) 
@@ -55,12 +55,19 @@ new_cancerdata <- cancerdata %>%
 ui <- dashboardPage(
   dashboardHeader(title = "Cancer Data Dashboard"),
   dashboardSidebar(
-    radioButtons(inputId = "pief", label = "Select Facet Variable:", 
+    radioButtons(inputId = "pief", label = "Select Pie chart Facet Variable:", 
                  choiceNames = c("Age of Diagnosis", "Race/Ethnicity", "Sex"),
-                 choiceValues = c("Age.recode", "Race.ethnicity", "Sex"))
+                 choiceValues = c("Age.recode", "Race.ethnicity", "Sex")),
+    radioButtons(inputId = "lines", label = "Select Line graph Facet Variable:",
+                  choiceNames = c("White", "Black", "All Asian", "All Pacific Islander",
+                                  "American Indian/Alaska Native", "Other", "Unkown"),
+                  choiceValues = c("White", "Black", "All Asian", "All Pacific Islander",
+                                   "American Indian/Alaska Native", "Other", "Unkown"))
   ),
   dashboardBody(
-    plotOutput("PieChart")
+    plotOutput("PieChart"),
+    actionButton("plot_button", "Show Point Plot"),
+    plotOutput("PointPlot")
   )
 )
 
@@ -82,6 +89,24 @@ server <- function(input, output){
       geom_text_repel(aes(label = percent_label), size = 4, 
                       position = position_stack(vjust = 0.5), 
                       box.padding = 0.1, max.overlaps = Inf)
+  })
+  
+  
+  # make density plots of cancer distribution over ages within each sex
+  output$PointPlot <- renderPlot({
+    data_count <- new_cancerdata %>%
+      #group_by(input$lines) %>% 
+      group_by(Age.recode, Sex, Race.ethnicity) %>%
+      mutate(count_perAgegroup = count(!!sym(input$lines))) %>%
+      select(Age.recode, count_perAgegroup)
+    #making density plots to see age distribution
+
+    ggplot(data_count, aes(x = Age.recode, y = count_perAgegroup, color = Sex, group = Sex)) +
+      geom_point() + geom_line() +
+      labs(title = "Cancer Distribution Over Ages",
+           x = "Age Group",
+           y = "Count") +
+      theme_minimal()
   })
 }
 #Piechart reference: https://www.youtube.com/watch?v=AHRh4yyHl4g
