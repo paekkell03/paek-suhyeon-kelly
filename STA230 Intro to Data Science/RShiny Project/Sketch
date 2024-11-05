@@ -127,26 +127,25 @@ ui <- dashboardPage(
                            choiceValues = c("White", "Black", "All Asian", "All Pacific Islander",
                                             "American Indian/Alaska Native", "Other", "Unknown")),
               actionButton("plot_button", "Show Updated Line Graph"),
-              plotOutput("LineGraph")
+              plotlyOutput("LineGraph")  # Updated to plotlyOutput
       )
     )
   )
 )
 
-
 # Define server logic
 server <- function(input, output){
-  #data manipulation for pie-chart on cancer by race
+  # Data manipulation for pie-chart on cancer by race
   output$PieChart <- renderPlot({
     input$plot_button
-      isolate({
+    isolate({
       # Create a summary based on the selected variable
       data <- new_cancerdata %>%
         count(!!sym(input$pief)) %>%
         mutate(percent = n / sum(n) * 100,
                percent_label = paste0(round(percent, 1), "%"))
 
-      # plotting pie chart
+      # Plotting pie chart
       ggplot(data, aes(x = "", y = percent, fill = !!sym(input$pief))) +
         geom_col(color = "black") +
         coord_polar(theta = "y") +
@@ -154,29 +153,40 @@ server <- function(input, output){
         theme_minimal() +
         geom_text_repel(aes(label = percent_label), size = 4,
                         position = position_stack(vjust = 0.5),
-                        box.padding = 0.1, max.overlaps = Inf)
-      })
+                        box.padding = 0.05, max.overlaps = Inf)
+    })
   })
 
-  # data manipulation for line graphs on cancer by race/sex over age groups
-  output$LineGraph <- renderPlot({
-    #need to click action button for line graph
-    input$plot_button
-    isolate({
-      data_count <- new_cancerdata %>%
-        filter(Race.ethnicity == input$lines) %>%
-        group_by(Age.recode, Sex) %>%
-        summarize(count_perAgegroup = n())
-
-      #plotting line graphs
-      ggplot(data_count, aes(x = Age.recode, y = count_perAgegroup, color = Sex, group = Sex)) +
-        geom_point() + geom_line() +
-        labs(title = "Cancer Distribution Over Ages",
-             x = "Age Group",
-             y = "Count") +
-        theme_minimal()
+  # Data manipulation for line graphs on cancer by race/sex over age groups
+  output$LineGraph <- renderPlotly({ # Use renderPlotly to allow hover
+  input$plot_button
+  isolate({
+    data_count <- new_cancerdata %>%
+      filter(Race.ethnicity == input$lines) %>%
+      group_by(Age.recode, Sex) %>%
+      summarize(count_perAgegroup = n(),
+                avg_survival_mts_perAgegroup = mean(Survival.months))
+    
+    # Custom hover text
+    data_count <- data_count %>%
+      mutate(hover_text = paste("Age Group:", Age.recode, "<br>",
+                                "Sex:", Sex, "<br>",
+                                "Count:", count_perAgegroup, "<br>",
+                                "Mean Survival Month for age group:", 
+                                round(avg_survival_mts_perAgegroup, 1), "<br>"))
+    
+    # Plotting line graphs with custom hover text
+    plot <- ggplot(data_count, aes(x = Age.recode, 
+                                   y = count_perAgegroup, 
+                                   color = Sex, group = Sex, text = hover_text)) +
+      geom_point() + geom_line() +
+      labs(title = "Cancer Distribution Over Ages",
+           x = "Age Group",
+           y = "Count") +
+      theme_minimal()
+    
+    ggplotly(plot, tooltip = "text")  # Display custom hover text
     })
-
   })
 }
 #Piechart reference: https://www.youtube.com/watch?v=AHRh4yyHl4g
