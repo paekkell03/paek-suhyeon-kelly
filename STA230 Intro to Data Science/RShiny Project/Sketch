@@ -18,10 +18,13 @@ library(RColorBrewer)
 library(ggrepel) # used to prevent label overlap in ggplots
 
 ```
+# DATA CLEANING FILE STARTS HERE
+library(dplyr)
+library(tidyr)
+library(stringr)
 
-## We will put the following data cleaning in a different R file later
-```{r Loading&Cleaning data}
-cancerdata <- read.csv("/Users/kellypaek/Desktop/STA230_RShiny_Debanjali_Kelly/cancer1.csv")
+#Loading and Cleaning data
+cancerdata <- read.csv("C:/Users/deban/OneDrive/Documents/cancer1.csv")
 
 # Viewing all categories for cleaning
 #racecategories <- unique(cancerdata$Race.ethnicity) 
@@ -31,12 +34,13 @@ cancerdata <- read.csv("/Users/kellypaek/Desktop/STA230_RShiny_Debanjali_Kelly/c
 #alltype <- unique(cancerdata$Primary.Site...labeled)
 #print(alltype)
 
-# Renaming columns and clean categories for readability
+# Renaming columns and cleaning dataset for readability
+# Grouping certain races, ages brackets and cancer sites together
 new_cancerdata <- cancerdata %>%
-  rename(Age = Age.recode.with..1.year.olds) %>%
+  rename(Age.recode = Age.recode.with..1.year.olds) %>%
   separate(col = Primary.Site...labeled, 
            into = c("Site", "SpecificSite"),
-           sep = "[-]") %>% #Need to fix this because C50.4 has 2 '-'s
+           sep = "[-]") %>% 
   select(-c("Year.of.diagnosis", "SEER.cause.specific.death.classification")) %>% 
   mutate(
     # Recategorize Race/Ethnicity
@@ -54,17 +58,17 @@ new_cancerdata <- cancerdata %>%
       TRUE ~ Race.ethnicity
     ),
     # Recategorize age groups
-    Age = case_when(
-      Age %in% c("00 years", "01-04 years", "05-09 years") ~ "0-9 years",
-      Age %in% c("10-14 years", "15-19 years") ~ "10-19 years",
-      Age %in% c("20-24 years", "25-29 years") ~ "20-29 years",
-      Age %in% c("30-34 years", "35-39 years") ~ "30-39 years",
-      Age %in% c("40-44 years", "45-49 years") ~ "40-49 years",
-      Age %in% c("50-54 years", "55-59 years") ~ "50-59 years",
-      Age %in% c("60-64 years", "65-69 years") ~ "60-69 years",
-      Age %in% c("70-74 years", "75-79 years") ~ "70-79 years",
-      Age %in% c("80-84 years", "85+ years") ~ "80+ years",
-      TRUE ~ Age
+    Age.recode = case_when(
+      Age.recode %in% c("00 years", "01-04 years", "05-09 years") ~ "0-9 years",
+      Age.recode %in% c("10-14 years", "15-19 years") ~ "10-19 years",
+      Age.recode %in% c("20-24 years", "25-29 years") ~ "20-29 years",
+      Age.recode %in% c("30-34 years", "35-39 years") ~ "30-39 years",
+      Age.recode %in% c("40-44 years", "45-49 years") ~ "40-49 years",
+      Age.recode %in% c("50-54 years", "55-59 years") ~ "50-59 years",
+      Age.recode %in% c("60-64 years", "65-69 years") ~ "60-69 years",
+      Age.recode %in% c("70-74 years", "75-79 years") ~ "70-79 years",
+      Age.recode %in% c("80-84 years", "85+ years") ~ "80+ years",
+      TRUE ~ Age.recode
     ),
     # Recategorize by major organ system
     Site = case_when(
@@ -92,8 +96,16 @@ new_cancerdata <- cancerdata %>%
       ~ "Nervous System",
       TRUE ~ "Other"
     )
-  )
+  ) %>%
+  select(Age.recode, Sex, Race.ethnicity, Site, SpecificSite, Survival.months)
 
+#need numeric values to find mean values in the app
+new_cancerdata$Survival.months = as.numeric(new_cancerdata$Survival.months)
+
+write.csv(new_cancerdata, "cleaned_cancer_data")
+#we have created cleaned_cancer_data - a cleaned file ready for use!
+
+# DATA CLEANING FILE ENDS HERE
 ```
 
 ## Building RShiny App
@@ -141,7 +153,7 @@ server <- function(input, output){
     input$plot_button
     isolate({
       # Create a summary based on the selected variable
-      data <- new_cancerdata %>%
+      data <- cleaned_cancer_data %>%
         count(!!sym(input$pief)) %>%
         mutate(percent = n / sum(n) * 100,
                percent_label = paste0(round(percent, 1), "%"))
@@ -163,7 +175,7 @@ server <- function(input, output){
   output$LineGraph <- renderPlotly({ # Use renderPlotly to allow hover
   input$plot_button
   isolate({
-    data_count <- new_cancerdata %>%
+    data_count <- cleaned_cancer_data %>%
       filter(Race.ethnicity == input$lines) %>%
       group_by(Age, Sex) %>%
       summarize(count_perAgegroup = n(),
