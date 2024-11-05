@@ -16,7 +16,7 @@ cancerdata <- read.csv("C:/Users/deban/OneDrive/Documents/cancer1.csv")
 # Renaming columns and cleaning dataset for readability
 # Grouping certain races, ages brackets and cancer sites together
 new_cancerdata <- cancerdata %>%
-  rename(Age.recode = Age.recode.with..1.year.olds) %>%
+  rename(Age = Age.recode.with..1.year.olds) %>%
   separate(col = Primary.Site...labeled, 
            into = c("Site", "SpecificSite"),
            sep = "[-]") %>% 
@@ -37,17 +37,17 @@ new_cancerdata <- cancerdata %>%
       TRUE ~ Race.ethnicity
     ),
     # Recategorize age groups
-    Age.recode = case_when(
-      Age.recode %in% c("00 years", "01-04 years", "05-09 years") ~ "0-9 years",
-      Age.recode %in% c("10-14 years", "15-19 years") ~ "10-19 years",
-      Age.recode %in% c("20-24 years", "25-29 years") ~ "20-29 years",
-      Age.recode %in% c("30-34 years", "35-39 years") ~ "30-39 years",
-      Age.recode %in% c("40-44 years", "45-49 years") ~ "40-49 years",
-      Age.recode %in% c("50-54 years", "55-59 years") ~ "50-59 years",
-      Age.recode %in% c("60-64 years", "65-69 years") ~ "60-69 years",
-      Age.recode %in% c("70-74 years", "75-79 years") ~ "70-79 years",
-      Age.recode %in% c("80-84 years", "85+ years") ~ "80+ years",
-      TRUE ~ Age.recode
+    Age = case_when(
+      Age %in% c("00 years", "01-04 years", "05-09 years") ~ "0-9 years",
+      Age %in% c("10-14 years", "15-19 years") ~ "10-19 years",
+      Age %in% c("20-24 years", "25-29 years") ~ "20-29 years",
+      Age %in% c("30-34 years", "35-39 years") ~ "30-39 years",
+      Age %in% c("40-44 years", "45-49 years") ~ "40-49 years",
+      Age %in% c("50-54 years", "55-59 years") ~ "50-59 years",
+      Age %in% c("60-64 years", "65-69 years") ~ "60-69 years",
+      Age %in% c("70-74 years", "75-79 years") ~ "70-79 years",
+      Age %in% c("80-84 years", "85+ years") ~ "80+ years",
+      TRUE ~ Age
     ),
     # Recategorize by major organ system
     Site = case_when(
@@ -76,10 +76,10 @@ new_cancerdata <- cancerdata %>%
       TRUE ~ "Other"
     )
   ) %>%
-  select(Age.recode, Sex, Race.ethnicity, Site, SpecificSite, Survival.months)
+  select(Age, Sex, Race.ethnicity, Site, SpecificSite, Survival.months)
 
 #need numeric values to find mean values in the app
 new_cancerdata$Survival.months = as.numeric(new_cancerdata$Survival.months)
 
-write.csv(new_cancerdata, "cleaned_cancer_data")
+write.csv(new_cancerdata, "C:/Users/deban/OneDrive/Desktop/Docs/STA R Stuff/cleaned_cancer_data.csv")
 #we have created cleaned_cancer_data - a cleaned file ready for use!
