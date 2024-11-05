@@ -1,0 +1,128 @@
+---
+title: "FinalShinyApp"
+author: "Kelly and Debanjali"
+date: "2024-11-05"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#getting necessary packages
+library(shiny)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(shinydashboard)
+library(ggrepel) # used to prevent label overlap in ggplots
+library(plotly)
+
+#cleaned dataset
+cleaned_cancer_data <- read.csv("cleaned_cancer_data")
+```
+
+## Building RShiny App
+# Define UI
+```{r}
+ui <- dashboardPage(
+  dashboardHeader(title = "Cancer Data 2019"),
+  dashboardSidebar(
+    sidebarMenu(
+      menuItem("Pie Charts", tabName = "piechart", icon = icon("chart-pie")),
+      menuItem("Line Graphs", tabName = "linegraph", icon = icon("chart-line"))
+    )
+  ),
+  dashboardBody(
+    tabItems(
+      # First tab for Pie Chart
+      tabItem(tabName = "piechart",
+              h2("Pie Charts by Variable"),
+              radioButtons(inputId = "pief", label = "Select Variable for Piechart:",
+                           choiceNames = c("Age of Diagnosis", "Race/Ethnicity", "Sex", "Cancer Site"),
+                           choiceValues = c("Age", "Race.ethnicity", "Sex", "Site")),
+              actionButton("plot_button", "Show Updated Pie Chart"),
+              plotOutput("PieChart")
+      ),
+      
+# Second tab for Line Graph
+      tabItem(tabName = "linegraph",
+              h2("Line Graph by Race/Ethnicity over Age groups"),
+              radioButtons(inputId = "lines", label = "Select Race/Ethnicity:",
+                           choiceNames = c("White", "Black", "All Asian", "All Pacific Islander",
+                                           "American Indian/Alaska Native", "Other", "Unknown"),
+                           choiceValues = c("White", "Black", "All Asian", "All Pacific Islander",
+                                            "American Indian/Alaska Native", "Other", "Unknown")),
+              actionButton("plot_button", "Show Updated Line Graph"),
+              plotlyOutput("LineGraph")  # Updated to plotlyOutput
+      )
+    )
+  )
+)
+
+```
+
+# Define server logic
+```{r}
+server <- function(input, output){
+  # Data manipulation for pie-chart on cancer by race
+  output$PieChart <- renderPlot({
+    input$plot_button
+    isolate({
+      # Create a summary based on the selected variable
+      data <- cleaned_cancer_data %>%
+        count(!!sym(input$pief)) %>%
+        mutate(percent = n / sum(n) * 100,
+               percent_label = paste0(round(percent, 1), "%"))
+      
+      # Plotting pie chart
+      ggplot(data, aes(x = "", y = percent, fill = !!sym(input$pief))) +
+        geom_col(color = "black") +
+        coord_polar(theta = "y") +
+        labs(fill = input$pief, y = "Percentage", x = NULL) +
+        theme_minimal() +
+        geom_text_repel(aes(label = percent_label), size = 4,
+                        position = position_stack(vjust = 0.5),
+                        box.padding = 0.05, max.overlaps = Inf) +
+        scale_fill_brewer(palette = "Set3")
+    })
+  })
+  
+  # Data manipulation for line graphs on cancer by race/sex over age groups
+  output$LineGraph <- renderPlotly({ # Use renderPlotly to allow hover
+    input$plot_button
+    isolate({
+      data_count <- cleaned_cancer_data %>%
+        filter(Race.ethnicity == input$lines) %>%
+        group_by(Age, Sex) %>%
+        summarise(count_perAgegroup = n(),
+                  avg_survival_mts_perAgegroup = mean(Survival.months, na.rm = TRUE))
+      
+      # Custom hover text
+      data_count <- data_count %>%
+        mutate(hover_text = paste("Age Group:", Age, "<br>",
+                                  "Sex:", Sex, "<br>",
+                                  "Count:", count_perAgegroup, "<br>",
+                                  "Average Survival Months:", 
+                                  round(avg_survival_mts_perAgegroup,1), "<br>"))
+      
+      # Plotting line graphs with custom hover text
+      plot <- ggplot(data_count, aes(x = Age, 
+                                     y = count_perAgegroup, 
+                                     color = Sex, group = Sex, text = hover_text)) +
+        geom_point() + geom_line() +
+        labs(title = "Cancer Distribution Over Ages",
+             x = "Age Group",
+             y = "Count") +
+        theme_minimal()
+      
+      ggplotly(plot, tooltip = "text")  # Display custom hover text
+    })
+  })
+}
+
+# Run the app
+shinyApp(ui, server)
+```
+
