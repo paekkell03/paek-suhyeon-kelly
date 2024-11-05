@@ -14,6 +14,7 @@ library(tidyr)
 library(shinydashboard)
 library(bslib)
 library(plotly)
+library(RColorBrewer)
 library(ggrepel) # used to prevent label overlap in ggplots
 
 ```
@@ -32,7 +33,7 @@ cancerdata <- read.csv("/Users/kellypaek/Desktop/STA230_RShiny_Debanjali_Kelly/c
 
 # Renaming columns and clean categories for readability
 new_cancerdata <- cancerdata %>%
-  rename(Age.recode = Age.recode.with..1.year.olds) %>%
+  rename(Age = Age.recode.with..1.year.olds) %>%
   separate(col = Primary.Site...labeled, 
            into = c("Site", "SpecificSite"),
            sep = "[-]") %>% #Need to fix this because C50.4 has 2 '-'s
@@ -53,17 +54,17 @@ new_cancerdata <- cancerdata %>%
       TRUE ~ Race.ethnicity
     ),
     # Recategorize age groups
-    Age.recode = case_when(
-      Age.recode %in% c("00 years", "01-04 years", "05-09 years") ~ "0-9 years",
-      Age.recode %in% c("10-14 years", "15-19 years") ~ "10-19 years",
-      Age.recode %in% c("20-24 years", "25-29 years") ~ "20-29 years",
-      Age.recode %in% c("30-34 years", "35-39 years") ~ "30-39 years",
-      Age.recode %in% c("40-44 years", "45-49 years") ~ "40-49 years",
-      Age.recode %in% c("50-54 years", "55-59 years") ~ "50-59 years",
-      Age.recode %in% c("60-64 years", "65-69 years") ~ "60-69 years",
-      Age.recode %in% c("70-74 years", "75-79 years") ~ "70-79 years",
-      Age.recode %in% c("80-84 years", "85+ years") ~ "80+ years",
-      TRUE ~ Age.recode
+    Age = case_when(
+      Age %in% c("00 years", "01-04 years", "05-09 years") ~ "0-9 years",
+      Age %in% c("10-14 years", "15-19 years") ~ "10-19 years",
+      Age %in% c("20-24 years", "25-29 years") ~ "20-29 years",
+      Age %in% c("30-34 years", "35-39 years") ~ "30-39 years",
+      Age %in% c("40-44 years", "45-49 years") ~ "40-49 years",
+      Age %in% c("50-54 years", "55-59 years") ~ "50-59 years",
+      Age %in% c("60-64 years", "65-69 years") ~ "60-69 years",
+      Age %in% c("70-74 years", "75-79 years") ~ "70-79 years",
+      Age %in% c("80-84 years", "85+ years") ~ "80+ years",
+      TRUE ~ Age
     ),
     # Recategorize by major organ system
     Site = case_when(
@@ -113,7 +114,7 @@ ui <- dashboardPage(
               h2("Pie Chart"),
               radioButtons(inputId = "pief", label = "Select Variable for Piechart:",
                            choiceNames = c("Age of Diagnosis", "Race/Ethnicity", "Sex", "Cancer Site"),
-                           choiceValues = c("Age.recode", "Race.ethnicity", "Sex", "Site")),
+                           choiceValues = c("Age", "Race.ethnicity", "Sex", "Site")),
               actionButton("plot_button", "Show Updated Pie Chart"),
               plotOutput("PieChart")
       ),
@@ -153,7 +154,8 @@ server <- function(input, output){
         theme_minimal() +
         geom_text_repel(aes(label = percent_label), size = 4,
                         position = position_stack(vjust = 0.5),
-                        box.padding = 0.05, max.overlaps = Inf)
+                        box.padding = 0.05, max.overlaps = Inf) +
+         scale_fill_brewer(palette = "Set3")
     })
   })
 
@@ -163,20 +165,20 @@ server <- function(input, output){
   isolate({
     data_count <- new_cancerdata %>%
       filter(Race.ethnicity == input$lines) %>%
-      group_by(Age.recode, Sex) %>%
+      group_by(Age, Sex) %>%
       summarize(count_perAgegroup = n(),
-                avg_survival_mts_perAgegroup = mean(Survival.months))
+                avg_survival_mts_perAgegroup = mean(Survival.months, na.rm = TRUE))
     
     # Custom hover text
     data_count <- data_count %>%
-      mutate(hover_text = paste("Age Group:", Age.recode, "<br>",
+      mutate(hover_text = paste("Age Group:", Age, "<br>",
                                 "Sex:", Sex, "<br>",
                                 "Count:", count_perAgegroup, "<br>",
                                 "Mean Survival Month for age group:", 
                                 round(avg_survival_mts_perAgegroup, 1), "<br>"))
     
     # Plotting line graphs with custom hover text
-    plot <- ggplot(data_count, aes(x = Age.recode, 
+    plot <- ggplot(data_count, aes(x = Age, 
                                    y = count_perAgegroup, 
                                    color = Sex, group = Sex, text = hover_text)) +
       geom_point() + geom_line() +
