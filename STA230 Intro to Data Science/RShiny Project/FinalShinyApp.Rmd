@@ -20,15 +20,15 @@ library(ggrepel) # used to prevent label overlap in ggplots
 library(plotly)
 
 #cleaned dataset
-cleaned_cancer_data <- read.csv("cleaned_cancer_data")
+cleaned_cancer_data <- read.csv("C:/Users/deban/OneDrive/Desktop/Docs/STA R Stuff/cleaned_cancer_data.csv")
 ```
 
 ## Building RShiny App
 # Define UI
 ```{r}
 ui <- dashboardPage(
-  dashboardHeader(title = "Cancer Data 2019"),
-  dashboardSidebar(
+  dashboardHeader(title = "Cancer Data 2019"), # main heading in the app
+  dashboardSidebar( # want 2 sidebar tabs for pie charts and line graphs
     sidebarMenu(
       menuItem("Pie Charts", tabName = "piechart", icon = icon("chart-pie")),
       menuItem("Line Graphs", tabName = "linegraph", icon = icon("chart-line"))
@@ -40,9 +40,9 @@ ui <- dashboardPage(
       tabItem(tabName = "piechart",
               h2("Pie Charts by Variable"),
               radioButtons(inputId = "pief", label = "Select Variable for Piechart:",
-                           choiceNames = c("Age of Diagnosis", "Race/Ethnicity", "Sex", "Cancer Site"),
-                           choiceValues = c("Age", "Race.ethnicity", "Sex", "Site")),
-              actionButton("plot_button", "Show Updated Pie Chart"),
+                           choiceNames = c("Age of Diagnosis", "Race/Ethnicity", "Sex", "Cancer Site"), # variable names available for selection
+                           choiceValues = c("Age", "Race.ethnicity", "Sex", "Site")), # dataset columns
+              actionButton("plot_button", "Show Updated Pie Chart"), # plot updates only when Button is clicked
               plotOutput("PieChart")
       ),
       
@@ -51,11 +51,11 @@ ui <- dashboardPage(
               h2("Line Graph by Race/Ethnicity over Age groups"),
               radioButtons(inputId = "lines", label = "Select Race/Ethnicity:",
                            choiceNames = c("White", "Black", "All Asian", "All Pacific Islander",
-                                           "American Indian/Alaska Native", "Other", "Unknown"),
+                                           "American Indian/Alaska Native", "Other or Unknown"), # race/ethnicity types available for selection
                            choiceValues = c("White", "Black", "All Asian", "All Pacific Islander",
-                                            "American Indian/Alaska Native", "Other", "Unknown")),
-              actionButton("plot_button", "Show Updated Line Graph"),
-              plotlyOutput("LineGraph")  # Updated to plotlyOutput
+                                            "American Indian/Alaska Native", "Other or Unknown")),
+              actionButton("plot_button", "Show Updated Line Graph"), # possible race/ethnicity types in dataset
+              plotlyOutput("LineGraph")  # Updated to plotlyOutput to use hover later
       )
     )
   )
@@ -69,7 +69,7 @@ server <- function(input, output){
   # Data manipulation for pie-chart on cancer by race
   output$PieChart <- renderPlot({
     input$plot_button
-    isolate({
+    isolate({ #isolates this part of the code from running until update button is clicked
       # Create a summary based on the selected variable
       data <- cleaned_cancer_data %>%
         count(!!sym(input$pief)) %>%
@@ -97,11 +97,11 @@ server <- function(input, output){
         filter(Race.ethnicity == input$lines) %>%
         group_by(Age, Sex) %>%
         summarise(count_perAgegroup = n(),
-                  avg_survival_mts_perAgegroup = mean(Survival.months, na.rm = TRUE))
+                  avg_survival_mts_perAgegroup = mean(Survival.months, na.rm = TRUE)) # want to display survival information in hover text
       
       # Custom hover text
       data_count <- data_count %>%
-        mutate(hover_text = paste("Age Group:", Age, "<br>",
+        mutate(hover_text = paste("Age Group:", Age, "<br>", # <br> puts a line break
                                   "Sex:", Sex, "<br>",
                                   "Count:", count_perAgegroup, "<br>",
                                   "Average Survival Months:", 
@@ -117,7 +117,7 @@ server <- function(input, output){
              y = "Count") +
         theme_minimal()
       
-      ggplotly(plot, tooltip = "text")  # Display custom hover text
+      ggplotly(plot, tooltip = "text")  # Displays custom hover text
     })
   })
 }
@@ -125,4 +125,3 @@ server <- function(input, output){
 # Run the app
 shinyApp(ui, server)
 ```
-
